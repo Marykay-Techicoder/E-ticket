@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pageantry Event Ticket</title>
+    <!-- Using specific version of QR Code library for better reliability -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background: linear-gradient(45deg, #d4af37, #000000, #c0c0c0);
+        color: #fff;
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 30px;
+        text-align: center;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.8);
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+      }
+
+      h2 {
+        color: #d4af37;
+        font-size: 32px;
+        margin-bottom: 30px;
+        text-transform: uppercase;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        border: 2px solid #d4af37;
+        background-color: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+
+      select option {
+        background-color: #000;
+        color: #fff;
+      }
+
+      button {
+        background: linear-gradient(45deg, #d4af37, #c0c0c0);
+        color: #000;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        text-transform: uppercase;
+        transition: all 0.3s ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+      }
+
+      .ticket {
+        display: none;
+        width: 800px;
+        margin: 20px auto;
+        background: linear-gradient(135deg, #000000, #1a1a1a);
+        border: 2px solid #d4af37;
+        border-radius: 15px;
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .ticket::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="50%" y="50%" font-size="20" fill="rgba(212,175,55,0.1)" text-anchor="middle" dominant-baseline="middle">PAGEANT</text></svg>');
+        opacity: 0.1;
+        pointer-events: none;
+      }
+
+      .ticket-content {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+      }
+
+      .ticket-details {
+        text-align: left;
+        padding: 20px;
+        border-right: 2px dashed #d4af37;
+      }
+
+      .ticket h3 {
+        color: #d4af37;
+        font-size: 28px;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        text-align: left;
+      }
+
+      .ticket p {
+        color: #fff;
+        font-size: 20px;
+        margin: 15px 0;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+        padding-bottom: 10px;
+      }
+
+      .ticket strong {
+        color: #d4af37;
+      }
+
+      .qr-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: #fff;
+        border-radius: 10px;
+      }
+
+      #qrcodeContainer {
+        padding: 10px;
+        background: #fff;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+
+      .ticket-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .ticket,
+        .ticket * {
+          visibility: visible;
+        }
+        .ticket {
+          position: absolute;
+          left: 0;
+          top: 0;
+        }
+        .ticket-actions {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- form to fill in details -->
+    <div class="container">
+      <h2>Pageantry Event Registration</h2>
+      <form id="ticketForm">
+        <div class="form-group">
+          <input type="text" id="name" placeholder="Full Name" required />
+        </div>
+
+        <div class="form-group">
+          <select id="ticketType" required>
+            <option value="">Select Ticket Type</option>
+            <option value="Diamond">Diamond Ticket</option>
+            <option value="Silver">Silver Ticket</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <select id="table" required>
+            <option value="">Select Table Number</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <select id="seat" required>
+            <option value="">Select Seat Number</option>
+          </select>
+        </div>
+
+        <button type="submit">Generate Ticket</button>
+      </form>
+
+      <!-- TICKET DETAILS AND IMAGE -->
+      <div class="ticket" id="ticket">
+        <div class="ticket-content">
+          <div class="ticket-details">
+            <h3>Pageantry Event 2025</h3>
+            <p><strong>Name:</strong> <span id="ticketName"></span></p>
+            <p>
+              <strong>Ticket Type:</strong> <span id="ticketTypeDisplay"></span>
+            </p>
+            <p><strong>Table:</strong> <span id="ticketTable"></span></p>
+            <p><strong>Seat Number:</strong> <span id="ticketSeat"></span></p>
+          </div>
+          <div class="qr-section">
+            <div id="qrcodeContainer"></div>
+            <small style="color: #000">Scan for access to event</small>
+          </div>
+        </div>
+        <div class="ticket-actions">
+          <button id="downloadBtn">Download Ticket</button>
+          <button id="printBtn">Print Ticket</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+      // For the table
+      const tableSelect = document.getElementById("table");
+      for (let i = 1; i <= 10; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `Table ${i}`;
+        tableSelect.appendChild(option);
+      }
+
+      // For the seat numbers
+      const seatSelect = document.getElementById("seat");
+      for (let i = 1; i <= 120; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `Seat ${i}`;
+        seatSelect.appendChild(option);
+      }
+
+      // Form submission event listener
+      document
+        .getElementById("ticketForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const name = document.getElementById("name").value;
+          const ticketType = document.getElementById("ticketType").value;
+          const table = document.getElementById("table").value;
+          const seat = document.getElementById("seat").value;
+
+          // Create a formatted text string for the QR code
+          const qrText = [
+            "PAGEANT EVENT 2025",
+            "-------------------",
+            `Name: ${name}`,
+            `Ticket Type: ${ticketType}`,
+            `Table: ${table}`,
+            `Seat: ${seat}`,
+            "-------------------",
+            "Valid for one entry",
+          ].join("\n");
+
+          const qrCodeContainer = document.getElementById("qrcodeContainer");
+          qrCodeContainer.innerHTML = "";
+
+          // Generate QR code with optimal settings for scanning
+          new QRCode(qrCodeContainer, {
+            text: qrText,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#FFFFFF",
+            correctLevel: QRCode.CorrectLevel.H,
+          });
+
+          // Ticket display
+          document.getElementById("ticketName").innerText = name;
+          document.getElementById("ticketTypeDisplay").innerText = ticketType;
+          document.getElementById("ticketTable").innerText = table;
+          document.getElementById("ticketSeat").innerText = seat;
+
+          document.getElementById("ticket").style.display = "block";
+        });
+
+      // Download ticket as image
+      document
+        .getElementById("downloadBtn")
+        .addEventListener("click", function () {
+          const ticket = document.getElementById("ticket");
+          const downloadBtn = document.getElementById("downloadBtn");
+          const printBtn = document.getElementById("printBtn");
+
+          downloadBtn.style.display = "none";
+          printBtn.style.display = "none";
+
+          const options = {
+            allowTaint: true,
+            useCORS: true,
+            backgroundColor: "#000000",
+            scale: 2,
+            logging: true,
+          };
+
+          html2canvas(ticket, options)
+            .then(function (canvas) {
+              canvas.toBlob(
+                function (blob) {
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = "pageantry_ticket.png";
+
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+
+                  downloadBtn.style.display = "block";
+                  printBtn.style.display = "block";
+                },
+                "image/png",
+                1.0
+              );
+            })
+            .catch(function (error) {
+              console.error("Error generating canvas:", error);
+              alert("Failed to download ticket. Please try again.");
+
+              downloadBtn.style.display = "block";
+              printBtn.style.display = "block";
+            });
+        });
+
+      document
+        .getElementById("printBtn")
+        .addEventListener("click", function () {
+          window.print();
+        });
+    </script>
+  </body>
+</html>
